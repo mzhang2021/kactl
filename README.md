@@ -1,3 +1,26 @@
+# Extra Stuff Added
+
+| Algorithm | Reason |
+|---|---|
+| Debug | For emergencies. |
+| MinCostMaxFlow | KACTL version uses $\mathcal O(n^2)$ memory. |
+| MinCostCirculation | Not in original repo. |
+| FlowWithDemands | Not in original repo. |
+| GeneralMatching | Uses blossom algorithm instead of randomized matrix inverse so more reliable, also very concise and clean. |
+| GeneralWeightedMatching | Not in original repo. |
+| DominatorTree | Not in original repo. |
+| TwoSatCommonOps | Quality of life. |
+| SegmentTreeBeats | Template included supports range min and max simultaneously, which can be hard to work out the details for from scratch. Code is longer than ideal though. |
+| Hashing | KACTL version unnecessarily uses struct and isn't randomized. |
+| Poly | Not in original repo. |
+
+TODO:
+- Figure out how to compile PDF with newly added stuff.
+- Shorten to fit (remove newlines from some of the more verbose stolen templates).
+- Investigate faster min cost circulation templates like maybe [this](https://github.com/Laakeri/contestlib/blob/master/src/graph/circulation.cpp) (maybe https://judge.yosupo.jp/problem/min_cost_b_flow is relevant but I don't know what a b-flow is).
+- Maybe include this [fully generalized LCT template](https://12tqian.github.io/cp-library/library/graphs/link-cut-tree.hpp)? Thing is this is so long and has so much room for typos while transcribing that if we ever run into a problem that needs this, we'll probably just take the L instead.
+- Comb through https://codeforces.com/blog/entry/94933 day before to see if we missed anything relevant.
+
 # KACTL
 
 This repo hosts KACTL, [KTH](https://en.wikipedia.org/wiki/KTH_Royal_Institute_of_Technology)'s ICPC team reference document.
