@@ -1,425 +1,314 @@
 /**
- * Description: Polynomial stuff (only code what you need I guess).
- * Author: 12tqian
- * Source: https://12tqian.github.io/cp-library/library/polynomial/polynomial.hpp
+ * Author: Andrew He
+ * Description: FFT/NTT, polynomial mod/log/exp
+ * Source: http://neerc.ifmo.ru/trains/toulouse/2017/fft2.pdf
+ * Papers about accuracy: http://www.daemonology.net/papers/fft.pdf, http://www.cs.berkeley.edu/~fateman/papers/fftvsothers.pdf
+ * For integers rounding works if $(|a| + |b|)\max(a, b) < \mathtt{\sim} 10^9$, or in theory maybe $10^6$.
  */
 
-namespace NTT {
+#define per(i, a, b) for (int i = (b) - 1; i >= a; i--)
+#define trav(a, x) for (auto &a : x)
 
-int bsf(unsigned int x) { return __builtin_ctz(x); }
-int bsf(unsigned long long x) { return __builtin_ctzll(x); }
-
-template <class Mint> void nft(bool type, std::vector<Mint>& a) {
-	int n = int(a.size()), s = 0;
-	while ((1 << s) < n) s++;
-	assert(1 << s == n);
-	static std::vector<Mint> ep, iep;
-	while (int(ep.size()) <= s) {
-		ep.push_back(pow(Mint::rt(), Mint(-1).v / (1 << ep.size())));
-		iep.push_back(1 / ep.back());
-	}
-	std::vector<Mint> b(n);
-	for (int i = 1; i <= s; i++) {
-		int w = 1 << (s - i);
-		Mint base = type ? iep[i] : ep[i], now = 1;
-		for (int y = 0; y < n / 2; y += w) {
-			for (int x = 0; x < w; x++) {
-				auto l = a[y << 1 | x];
-				auto r = now * a[y << 1 | x | w];
-				b[y | x] = l + r;
-				b[y | x | n >> 1] = l - r;
-			}
-			now *= base;
-		}
-		swap(a, b);
-	}
-}
-
-template <class Mint> std::vector<Mint> multiply_nft(const std::vector<Mint>& a, const std::vector<Mint>& b) {
-	int n = int(a.size()), m = int(b.size());
-	if (!n || !m) return {};
-	if (std::min(n, m) <= 8) {
-		std::vector<Mint> ans(n + m - 1);
-		for (int i = 0; i < n; i++)
-			for (int j = 0; j < m; j++) ans[i + j] += a[i] * b[j];
-		return ans;
-	}
-	int lg = 0;
-	while ((1 << lg) < n + m - 1) lg++;
-	int z = 1 << lg;
-	auto a2 = a, b2 = b;
-	a2.resize(z);
-	b2.resize(z);
-	nft(false, a2);
-	nft(false, b2);
-	for (int i = 0; i < z; i++) a2[i] *= b2[i];
-	nft(true, a2);
-	a2.resize(n + m - 1);
-	Mint iz = 1 / Mint(z);
-	for (int i = 0; i < n + m - 1; i++) a2[i] *= iz;
-	return a2;
-}
-
-// Cooley-Tukey: input -> butterfly -> bit reversing -> output
-// bit reversing
-template <class Mint> void butterfly(bool type, std::vector<Mint>& a) {
-	int n = int(a.size()), h = 0;
-	while ((1 << h) < n) h++;
-	assert(1 << h == n);
-	if (n == 1) return;
-	static std::vector<Mint> snow, sinow;
-	if (snow.empty()) {
-		Mint sep = Mint(1), siep = Mint(1);
-		unsigned int mod = Mint(-1).v;
-		unsigned int di = 4;
-		while (mod % di == 0) {
-			Mint ep = pow(Mint::rt(), mod / di);
-			Mint iep = 1 / ep;
-			snow.push_back(siep * ep);
-			sinow.push_back(sep * iep);
-			sep *= ep;
-			siep *= iep;
-			di *= 2;
-		}
-	}
-	if (!type) {
-		// fft
-		for (int ph = 1; ph <= h; ph++) {
-			int w = 1 << (ph - 1), p = 1 << (h - ph);
-			Mint now = Mint(1);
-			for (int s = 0; s < w; s++) {
-				int offset = s << (h - ph + 1);
-				for (int i = 0; i < p; i++) {
-					auto l = a[i + offset];
-					auto r = a[i + offset + p] * now;
-					a[i + offset] = l + r;
-					a[i + offset + p] = l - r;
-				}
-				int u = bsf(~(unsigned int)(s));
-				now *= snow[u];
-			}
-		}
-	} else {
-		// ifft
-		for (int ph = h; ph >= 1; ph--) {
-			int w = 1 << (ph - 1), p = 1 << (h - ph);
-			Mint inow = Mint(1);
-			for (int s = 0; s < w; s++) {
-				int offset = s << (h - ph + 1);
-				for (int i = 0; i < p; i++) {
-					auto l = a[i + offset];
-					auto r = a[i + offset + p];
-					a[i + offset] = l + r;
-					a[i + offset + p] = (l - r) * inow;
-				}
-				int u = bsf(~(unsigned int)(s));
-				inow *= sinow[u];
-			}
-		}
-	}
-}
-
-template <class Mint> std::vector<Mint> multiply(const std::vector<Mint>& a, const std::vector<Mint>& b) {
-	int n = int(a.size()), m = int(b.size());
-	if (!n || !m) return {};
-	if (std::min(n, m) < 8) {
-		std::vector<Mint> ans(n + m - 1);
-		for (int i = 0; i < n; i++)
-			for (int j = 0; j < m; j++) ans[i + j] += a[i] * b[j];
-		return ans;
-	}
-	int lg = 0;
-	while ((1 << lg) < n + m - 1) lg++;
-	int z = 1 << lg;
-	auto a2 = a;
-	a2.resize(z);
-	butterfly(false, a2);
-	if (a == b) {
-		for (int i = 0; i < z; i++) a2[i] *= a2[i];
-	} else {
-		auto b2 = b;
-		b2.resize(z);
-		butterfly(false, b2);
-		for (int i = 0; i < z; i++) a2[i] *= b2[i];
-	}
-	butterfly(true, a2);
-	a2.resize(n + m - 1);
-	Mint iz = 1 / Mint(z);
-	for (int i = 0; i < n + m - 1; i++) a2[i] *= iz;
-	return a2;
-}
-
-}
-
-template <class D> struct Poly : std::vector<D> {
-	using std::vector<D>::vector;
-
-	static const int SMALL_DEGREE = 60;
-
-	Poly(const std::vector<D>& _v = {}) {
-		for (int i = 0; i < (int)_v.size(); ++i) {
-			this->push_back(_v[i]);
-		}
-		shrink();
-	}
-
-	void shrink() {
-		while (this->size() && !this->back()) this->pop_back();
-	}
-
-	D freq(int p) const { return (p < (int)this->size()) ? (*this)[p] : D(0); }
-
-	Poly operator+(const Poly& r) const {
-		int n = std::max(this->size(), r.size());
-		std::vector<D> res(n);
-		for (int i = 0; i < n; i++) res[i] = freq(i) + r.freq(i);
-		return res;
-	}
-
-	Poly operator-(const Poly& r) const {
-		int n = std::max(this->size(), r.size());
-		std::vector<D> res(n);
-		for (int i = 0; i < n; i++) res[i] = freq(i) - r.freq(i);
-		return res;
-	}
-
-	bool small(const Poly& r) const { return std::min((int)this->size(), (int)r.size()) <= SMALL_DEGREE; }
-
-	Poly operator*(const Poly& r) const {
-		if (!std::min((int)this->size(), (int)r.size())) return {};
-		if (small(r)){
-			Poly res((int)this->size() + (int)r.size() - 1);
-			for (int i = 0; i < (int)this->size(); ++i) {
-				for (int j = 0; j < (int)r.size(); ++j) {
-					res[i + j] += (*this)[i] * r[j];
-				}
-			}
-			return res;
-		} else {
-			return {NTT::multiply((*this), r)};
-		}
-	}
-
-	Poly operator*(const D& r) const {
-		int n = this->size();
-		std::vector<D> res(n);
-		for (int i = 0; i < n; i++) res[i] = (*this)[i] * r;
-		return res;
-	}
-
-	Poly operator/(const D &r) const{ return *this * (1 / r); }
-
-
-	Poly& operator+=(const D& r) {
-		if (this->empty()) this->resize(1);
-		(*this)[0] += r;
-		return *this;
-	}
-
-	Poly& operator-=(const D& r) {
-		(*this)[0] -= r;
-		return *this;
-	}
-
-	Poly operator/(const Poly& r) const {
-		if (this->size() < r.size()) return {};
-		if (small(r)) {
-			Poly a = (*this);
-			Poly b = r;
-			a.shrink(), b.shrink();
-			D lst = b.back();
-			D ilst = 1 / lst;
-			for (auto& t : a) t *= ilst;
-			for (auto& t : b) t *= ilst;
-			Poly q(std::max((int)a.size() - (int)b.size() + 1, 0));
-			for (int diff; (diff = (int)a.size() - (int)b.size()) >= 0; a.shrink()) {
-				q[diff] = a.back();
-				for (int i = 0; i < (int)b.size(); ++i) {
-					a[i + diff] -= q[diff] * b[i];
-				}
-			}
-			return q;
-		} else {
-			int n = (int)this->size() - r.size() + 1;
-			return (rev().pre(n) * r.rev().inv(n)).pre(n).rev(n);
-		}
-	}
-
-	Poly operator%(const Poly& r) const { return *this - *this / r * r; }
-
-	Poly operator<<(int s) const {
-		std::vector<D> res(this->size() + s);
-		for (int i = 0; i < (int)this->size(); i++) res[i + s] = (*this)[i];
-		return res;
-	}
-
-	Poly operator>>(int s) const {
-		if ((int)this->size() <= s) return Poly();
-		std::vector<D> res(this->size() - s);
-		for (int i = 0; i < (int)this->size() - s; i++) res[i] = (*this)[i + s];
-		return res;
-	}
-
-	Poly operator+(const D& r) { return Poly(*this) += r; }
-	Poly operator-(const D& r) { return Poly(*this) -= r; }
-	Poly operator-() const { return (*this) * -1; }
-	Poly& operator+=(const Poly& r) { return *this = *this + r; }
-	Poly& operator-=(const Poly& r) { return *this = *this - r; }
-	Poly& operator*=(const Poly& r) { return *this = *this * r; }
-	Poly& operator*=(const D& r) { return *this = *this * r; }
-	Poly& operator/=(const Poly& r) { return *this = *this / r; }
-	Poly& operator/=(const D &r) { return *this = *this / r; }
-	Poly& operator%=(const Poly& r) { return *this = *this % r; }
-	Poly& operator<<=(const size_t& n) { return *this = *this << n; }
-	Poly& operator>>=(const size_t& n) { return *this = *this >> n; }
-	friend Poly operator*(D const& l, Poly r) { return r *= l; }
-	friend Poly operator/(D const& l, Poly r) { return l * r.inv(); }
-	friend Poly operator+(D const& l, Poly r) { return r += l; }
-	friend Poly operator-(D const& l, Poly r) { return -r + l; }
-
-	Poly pre(int le) const { return Poly(this->begin(), this->begin() + std::min((int)this->size(), le)); }
-
-	Poly rev(int n = -1) const {
-		Poly res = *this;
-		if (n != -1) res.resize(n);
-		reverse(res.begin(), res.end());
-		return res;
-	}
-
-	Poly diff() const {
-		std::vector<D> res(std::max(0, (int)this->size() - 1));
-		for (int i = 1; i < (int)this->size(); i++) res[i - 1] = freq(i) * i;
-		return res;
-	}
-
-	Poly inte() const {
-		std::vector<D> res(this->size() + 1);
-		for (int i = 0; i < (int)this->size(); i++) res[i + 1] = freq(i) / (i + 1);
-		return res;
-	}
-
-	// f * f.inv() = 1 + g(x)x^m
-	Poly inv(int m = -1) const {
-		if (m == -1) m = (int)this->size();
-		Poly res = Poly({D(1) / freq(0)});
-		for (int i = 1; i < m; i *= 2) {
-			res = (res * D(2) - res * res * pre(2 * i)).pre(2 * i);
-		}
-		return res.pre(m);
-	}
-
-	Poly exp(int n = -1) const {
-		assert(freq(0) == 0);
-		if (n == -1) n = (int)this->size();
-		Poly f({1}), g({1});
-		for (int i = 1; i < n; i *= 2) {
-			g = (g * 2 - f * g * g).pre(i);
-			Poly q = diff().pre(i - 1);
-			Poly w = (q + g * (f.diff() - f * q)).pre(2 * i - 1);
-			f = (f + f * (*this - w.inte()).pre(2 * i)).pre(2 * i);
-		}
-		return f.pre(n);
-	}
-
-	Poly log(int n = -1) const {
-		if (n == -1) n = (int)this->size();
-		assert(freq(0) == 1);
-		auto f = pre(n);
-		return (f.diff() * f.inv(n - 1)).pre(n - 1).inte();
-	}
-
-	Poly pow_mod(const Poly& mod, long long n = -1) {
-		if (n == -1) n = this->size();
-		Poly x = *this, r = {{1}};
-		while (n) {
-			if (n & 1) r = r * x % mod;
-			x = x * x % mod;
-			n >>= 1;
-		}
-		return r;
-	}
-
-	D _pow(D x, long long k) {
-		D r = 1;
-		while (k) {
-			if (k & 1) {
-				r *= x;
-			}
-			x *= x;
-			k >>= 1;
-		}
-		return r;
-	}
-
-	Poly pow(long long k, int n = -1) {
-		if (n == -1) n = this->size();
-		int sz = (int)this->size();
-		for (int i = 0; i < sz; ++i) {
-			if (freq(i) != 0) {
-				if (i * k > n) return Poly(n);
-				D rev = 1 / (*this)[i];
-				Poly ret = (((*this * rev) >> i).log(n) * k).exp(n) * _pow((*this)[i], k);
-				ret = (ret << (i * k)).pre(n);
-				ret.resize(n);
-				return ret;
-			}
-		}
-		return Poly(n);
-	}
-
-	friend std::ostream& operator<<(std::ostream& os, const Poly& p) {
-		if (p.empty()) return os << "0";
-		for (auto i = 0; i < (int)p.size(); i++) {
-			if (p[i]) {
-				os << p[i] << "x^" << i;
-				if (i != (int)p.size() - 1) os << "+";
-			}
-		}
-		return os;
-	}
+namespace fft {
+#if FFT
+// FFT
+using dbl = double;
+struct num { /// start-hash
+	dbl x, y;
+	num(dbl x_ = 0, dbl y_ = 0) : x(x_), y(y_) { }
 };
-
-template <class Mint> struct MultiEval {
-	using NP = MultiEval*;
-	NP l, r;
-	std::vector<Mint> que;
-	int sz;
-	Poly<Mint> mul;
-
-	MultiEval(const std::vector<Mint>& _que, int off, int _sz) : sz(_sz) {
-		if (sz <= 100) {
-			que = {_que.begin() + off, _que.begin() + off + sz};
-			mul = {{1}};
-			for (auto x : que) mul *= {{-x, 1}};
-			return;
-		}
-		l = new MultiEval(_que, off, sz / 2);
-		r = new MultiEval(_que, off + sz / 2, sz - sz / 2);
-		mul = l->mul * r->mul;
-	}
-
-	MultiEval(const std::vector<Mint>& _que) : MultiEval(_que, 0, int(_que.size())) {}
-
-	void query(const Poly<Mint>& _pol, std::vector<Mint>& res) const {
-		if (sz <= 100) {
-			for (auto x : que) {
-				Mint sm = 0, base = 1;
-				for (int i = 0; i < _pol.size(); i++) {
-					sm += base * _pol.freq(i);
-					base *= x;
-				}
-				res.push_back(sm);
-			}
-			return;
-		}
-		auto pol = _pol % mul;
-		l->query(pol, res);
-		r->query(pol, res);
-	}
-
-	std::vector<Mint> query(const Poly<Mint>& pol) const {
-		std::vector<Mint> res;
-		query(pol, res);
-		return res;
-	}
+inline num operator+(num a, num b) { return num(a.x + b.x, a.y + b.y); }
+inline num operator-(num a, num b) { return num(a.x - b.x, a.y - b.y); }
+inline num operator*(num a, num b) { return num(a.x * b.x - a.y * b.y, a.x * b.y + a.y * b.x); }
+inline num conj(num a) { return num(a.x, -a.y); }
+inline num inv(num a) { dbl n = (a.x*a.x+a.y*a.y); return num(a.x/n,-a.y/n); }
+/// end-hash
+#else
+// NTT
+const int mod = 998244353, g = 3;
+// For p < 2^30 there is also (5 << 25, 3), (7 << 26, 3),
+// (479 << 21, 3) and (483 << 21, 5). Last two are > 10^9.
+struct num { /// start-hash
+	int v;
+	num(ll v_ = 0) : v(int(v_ % mod)) { if (v<0) v+=mod; }
+	explicit operator int() const { return v; }
 };
+inline num operator+(num a,num b){return num(a.v+b.v);}
+inline num operator-(num a,num b){return num(a.v+mod-b.v);}
+inline num operator*(num a,num b){return num(1ll*a.v*b.v);}
+inline num pow(num a, int b) {
+	num r = 1;
+	do{if(b&1)r=r*a;a=a*a;}while(b>>=1);
+	return r;
+}
+inline num inv(num a) { return pow(a, mod-2); }
+/// end-hash
+#endif
+
+using vn = vector<num>;
+vi rev({0, 1});
+vn rt(2, num(1)), fa, fb;
+
+inline void init(int n) { /// start-hash
+	if (n <= sz(rt)) return;
+	rev.resize(n);
+	rep(i,0,n) rev[i] = (rev[i>>1] | ((i&1)*n)) >> 1;
+	rt.reserve(n);
+	for (int k = sz(rt); k < n; k *= 2) {
+		rt.resize(2*k);
+#if FFT
+		double a=M_PI/k; num z(cos(a),sin(a)); // FFT
+#else
+		num z = pow(num(g), (mod-1)/(2*k)); // NTT
+#endif
+		rep(i,k/2,k) rt[2*i] = rt[i], rt[2*i+1] = rt[i]*z;
+	}
+} /// end-hash
+
+inline void fft(vector<num> &a, int n) { /// start-hash
+	init(n);
+	int s = __builtin_ctz(sz(rev)/n);
+	rep(i,0,n) if (i < rev[i]>>s) swap(a[i], a[rev[i]>>s]);
+	for (int k = 1; k < n; k *= 2)
+		for (int i = 0; i < n; i += 2 * k) rep(j,0,k) {
+			num t = rt[j+k] * a[i+j+k];
+			a[i+j+k] = a[i+j] - t;
+			a[i+j] = a[i+j] + t;
+		}
+} /// end-hash
+
+// Complex/NTT
+vn multiply(vn a, vn b) { /// start-hash
+	int s = sz(a) + sz(b) - 1;
+	if (s <= 0) return {};
+	int L = s > 1 ? 32 - __builtin_clz(s-1) : 0, n = 1 << L;
+	a.resize(n), b.resize(n);
+	fft(a, n);
+	fft(b, n);
+	num d = inv(num(n));
+	rep(i,0,n) a[i] = a[i] * b[i] * d;
+	reverse(a.begin()+1, a.end());
+	fft(a, n);
+	a.resize(s);
+	return a;
+} /// end-hash
+
+// Complex/NTT power-series inverse
+// Doubles b as b[:n] = (2 - a[:n] * b[:n/2]) * b[:n/2]
+vn inverse(const vn& a) { /// start-hash
+	if (a.empty()) return {};
+	vn b({inv(a[0])});
+	b.reserve(2*a.size());
+	while (sz(b) < sz(a)) {
+		int n = 2*sz(b);
+		b.resize(2*n, 0);
+		if (sz(fa) < 2*n) fa.resize(2*n);
+		fill(fa.begin(), fa.begin()+2*n, 0);
+		copy(a.begin(), a.begin()+min(n,sz(a)), fa.begin());
+		fft(b, 2*n);
+		fft(fa, 2*n);
+		num d = inv(num(2*n));
+		rep(i, 0, 2*n) b[i] = b[i] * (2 - fa[i] * b[i]) * d;
+		reverse(b.begin()+1, b.end());
+		fft(b, 2*n);
+		b.resize(n);
+	}
+	b.resize(a.size());
+	return b;
+} /// end-hash
+
+#if FFT
+// Double multiply (num = complex)
+using vd = vector<double>;
+vd multiply(const vd& a, const vd& b) { /// start-hash
+	int s = sz(a) + sz(b) - 1;
+	if (s <= 0) return {};
+	int L = s > 1 ? 32 - __builtin_clz(s-1) : 0, n = 1 << L;
+	if (sz(fa) < n) fa.resize(n);
+	if (sz(fb) < n) fb.resize(n);
+
+	fill(fa.begin(), fa.begin() + n, 0);
+	rep(i,0,sz(a)) fa[i].x = a[i];
+	rep(i,0,sz(b)) fa[i].y = b[i];
+	fft(fa, n);
+	trav(x, fa) x = x * x;
+	rep(i,0,n) fb[i] = fa[(n-i)&(n-1)] - conj(fa[i]);
+	fft(fb, n);
+	vd r(s);
+	rep(i,0,s) r[i] = fb[i].y / (4*n);
+	return r;
+} /// end-hash
+
+// Integer multiply mod m (num = complex) /// start-hash
+vi multiply_mod(const vi& a, const vi& b, int m) {
+	int s = sz(a) + sz(b) - 1;
+	if (s <= 0) return {};
+	int L = s > 1 ? 32 - __builtin_clz(s-1) : 0, n = 1 << L;
+	if (sz(fa) < n) fa.resize(n);
+	if (sz(fb) < n) fb.resize(n);
+
+	rep(i,0,sz(a)) fa[i] = num(a[i] & ((1<<15)-1), a[i] >> 15);
+	fill(fa.begin()+sz(a), fa.begin() + n, 0);
+	rep(i,0,sz(b)) fb[i] = num(b[i] & ((1<<15)-1), b[i] >> 15);
+	fill(fb.begin()+sz(b), fb.begin() + n, 0);
+
+	fft(fa, n);
+	fft(fb, n);
+	double r0 = 0.5 / n; // 1/2n
+	rep(i,0,n/2+1) {
+		int j = (n-i)&(n-1);
+		num g0 = (fb[i] + conj(fb[j])) * r0;
+		num g1 = (fb[i] - conj(fb[j])) * r0;
+		swap(g1.x, g1.y); g1.y *= -1;
+		if (j != i) {
+			swap(fa[j], fa[i]);
+			fb[j] = fa[j] * g1;
+			fa[j] = fa[j] * g0;
+		}
+		fb[i] = fa[i] * conj(g1);
+		fa[i] = fa[i] * conj(g0);
+	}
+	fft(fa, n);
+	fft(fb, n);
+	vi r(s);
+	rep(i,0,s) r[i] = int((ll(fa[i].x+0.5)
+				+ (ll(fa[i].y+0.5) % m << 15)
+				+ (ll(fb[i].x+0.5) % m << 15)
+				+ (ll(fb[i].y+0.5) % m << 30)) % m);
+	return r;
+} /// end-hash
+#endif
+
+} // namespace fft
+
+// For multiply_mod, use num = modnum, poly = vector<num>
+using fft::num;
+using poly = fft::vn;
+using fft::multiply;
+using fft::inverse;
+/// start-hash
+poly& operator+=(poly& a, const poly& b) {
+	if (sz(a) < sz(b)) a.resize(b.size());
+	rep(i,0,sz(b)) a[i]=a[i]+b[i];
+	return a;
+}
+poly operator+(const poly& a, const poly& b) { poly r=a; r+=b; return r; }
+poly& operator-=(poly& a, const poly& b) {
+	if (sz(a) < sz(b)) a.resize(b.size());
+	rep(i,0,sz(b)) a[i]=a[i]-b[i];
+	return a;
+}
+poly operator-(const poly& a, const poly& b) { poly r=a; r-=b; return r; }
+poly operator*(const poly& a, const poly& b) {
+	// TODO: small-case?
+	return multiply(a, b);
+}
+poly& operator*=(poly& a, const poly& b) {return a = a*b;}
+/// end-hash
+poly& operator*=(poly& a, const num& b) { // Optional
+	trav(x, a) x = x * b;
+	return a;
+}
+poly operator*(const poly& a, const num& b) { poly r=a; r*=b; return r; }
+
+// Polynomial floor division; no leading 0's plz
+poly operator/(poly a, poly b) { /// start-hash
+	if (sz(a) < sz(b)) return {};
+	int s = sz(a)-sz(b)+1;
+	reverse(a.begin(), a.end());
+	reverse(b.begin(), b.end());
+	a.resize(s);
+	b.resize(s);
+	a = a * inverse(move(b));
+	a.resize(s);
+	reverse(a.begin(), a.end());
+	return a;
+} /// end-hash
+poly& operator/=(poly& a, const poly& b) {return a = a/b;}
+poly& operator%=(poly& a, const poly& b) { /// start-hash
+	if (sz(a) >= sz(b)) {
+		poly c = (a / b) * b;
+		a.resize(sz(b)-1);
+		rep(i,0,sz(a)) a[i] = a[i]-c[i];
+	}
+	return a;
+} /// end-hash
+poly operator%(const poly& a, const poly& b) { poly r=a; r%=b; return r; }
+
+// Log/exp/pow
+poly deriv(const poly& a) { /// start-hash
+	if (a.empty()) return {};
+	poly b(sz(a)-1);
+	rep(i,1,sz(a)) b[i-1]=a[i]*i;
+	return b;
+} /// end-hash
+poly integ(const poly& a) { /// start-hash
+	poly b(sz(a)+1);
+	b[1]=1; // mod p
+	rep(i,2,sz(b)) b[i]=b[fft::mod%i]*(-fft::mod/i); // mod p
+	rep(i,1,sz(b)) b[i]=a[i-1]*b[i]; // mod p
+	//rep(i,1,sz(b)) b[i]=a[i-1]*inv(num(i)); // else
+	return b;
+} /// end-hash
+poly log(const poly& a) { // a[0] == 1 /// start-hash
+	poly b = integ(deriv(a)*inverse(a));
+	b.resize(a.size());
+	return b;
+} /// end-hash
+poly exp(const poly& a) { // a[0] == 0 /// start-hash
+	poly b(1,num(1));
+	if (a.empty()) return b;
+	while (sz(b) < sz(a)) {
+		int n = min(sz(b) * 2, sz(a));
+		b.resize(n);
+		poly v = poly(a.begin(), a.begin() + n) - log(b);
+		v[0] = v[0]+num(1);
+		b *= v;
+		b.resize(n);
+	}
+	return b;
+} /// end-hash
+poly pow(const poly& a, int m) { // m >= 0 /// start-hash
+	poly b(a.size());
+	if (!m) { b[0] = 1; return b; }
+	int p = 0;
+	while (p<sz(a) && a[p].v==0) ++p;
+	if (1ll*m*p >= sz(a)) return b;
+	num mu = pow(a[p], m), di = inv(a[p]);
+	poly c(sz(a) - m*p);
+	rep(i,0,sz(c)) c[i] = a[i+p] * di;
+	c = log(c);
+	trav(v,c) v = v * m;
+	c = exp(c);
+	rep(i,0,sz(c)) b[i+m*p] = c[i] * mu;
+	return b;
+} /// end-hash
+
+// Multipoint evaluation/interpolation
+/// start-hash
+vector<num> eval(const poly& a, const vector<num>& x) {
+	int n=sz(x);
+	if (!n) return {};
+	vector<poly> up(2*n);
+	rep(i,0,n) up[i+n] = poly({0-x[i], 1});
+	per(i,1,n) up[i] = up[2*i]*up[2*i+1];
+	vector<poly> down(2*n);
+	down[1] = a % up[1];
+	rep(i,2,2*n) down[i] = down[i/2] % up[i];
+	vector<num> y(n);
+	rep(i,0,n) y[i] = down[i+n][0];
+	return y;
+} /// end-hash
+/// start-hash
+poly interp(const vector<num>& x, const vector<num>& y) {
+	int n=sz(x);
+	assert(n);
+	vector<poly> up(n*2);
+	rep(i,0,n) up[i+n] = poly({0-x[i], 1});
+	per(i,1,n) up[i] = up[2*i]*up[2*i+1];
+	vector<num> a = eval(deriv(up[1]), x);
+	vector<poly> down(2*n);
+	rep(i,0,n) down[i+n] = poly({y[i]*inv(a[i])});
+	per(i,1,n) down[i] = down[i*2] * up[i*2+1] + down[i*2+1] * up[i*2];
+	return down[1];
+} /// end-hash
