@@ -11,11 +11,13 @@
 | DominatorTree | Not in original repo. |
 | LinkCutTree | Easier and more obvious how to use than KACTL version. |
 | CycleCounting | Not in original repo. |
-| TwoSatCommonOps | Quality of life. |
+| TwoSatCommonOps | Extra use case. |
+| HLDNotCommutative | Extra use case. |
 | SegmentTreeBeats | Template included supports range min and max simultaneously, which can be hard to work out the details for from scratch. Code is longer than ideal though. |
 | Hashing | KACTL version unnecessarily uses struct and isn't randomized. |
 | Poly | Not in original repo. |
 | HalfPlaneIntersection | Not in original repo. |
+| Interpolation | KACTL version is $\mathcal O(n^2)$, but sometimes $\mathcal O(n)$ for arithmetic series can be useful. |
 
 TODO:
 - Figure out how to compile PDF with newly added stuff.
