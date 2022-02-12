@@ -14,3 +14,19 @@ import sys
 input, print = sys.stdin.readline, sys.stdout.write
 // input will now contain a trailing newline character
 // print will no longer automatically add a newline
+
+/* STRESS TESTING (Windows) */
+@echo off
+set i=1
+
+:loop
+gen %i% > test.in
+echo %i%
+a < test.in > a.out
+b < test.in > b.out
+fc /b a.out b.out > nul
+if errorlevel 1 (
+goto :eof
+)
+set /a i += 1
+goto loop
