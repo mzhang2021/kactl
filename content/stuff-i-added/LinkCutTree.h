@@ -1,7 +1,6 @@
 /**
- * Description: Link cut tree for maintaining path or subtree aggregates while adding or removing edges. Uses 1-based indexing. I believe the lazy only works for path, not subtree.
- * KNOWN BUG: Implementation doesn't seem to pull properly for non-commutative functions?
- * See https://judge.yosupo.jp/submission/78077 vs https://judge.yosupo.jp/submission/78086, only difference is line 40.
+ * Description: Link cut tree for maintaining path or subtree aggregates while adding or removing edges. Uses 1-based indexing.
+ * I believe the lazy only works for path, not subtree.
  * Author: bicsi
  * Source: https://codeforces.com/blog/entry/75885
  * Time: O(log n) for all operations
