@@ -1,3 +1,8 @@
+/**
+ * Description: HLD for non commutative aggregates
+ * Author:
+ */
+
 // For non-commutative functions like in https://www.spoj.com/problems/GSS7/, do this instead:
 
 template<class B>

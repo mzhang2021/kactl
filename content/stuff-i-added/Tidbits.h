@@ -1,3 +1,8 @@
+/**
+ * Description:
+ * Author:
+ */
+
 // for stuff that isn't long enough to include in it's own file but still important
 
 /* FAST I/O */

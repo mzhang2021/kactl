@@ -2,7 +2,7 @@
  * Description: A polynomial hash function for strings.
  * Author: smax
  * Source: https://codeforces.com/blog/entry/60445
- * Verification: https://acm.timus.ru/problem.aspx?space=1&num=1517
+ * Status: Tested on https://acm.timus.ru/problem.aspx?space=1&num=1517
  */
 
 const uint64_t MOD = (1ULL << 61) - 1;

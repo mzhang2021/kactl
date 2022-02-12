@@ -2,7 +2,7 @@
  * Description: Builds the dominator tree, where u dominates v if u is an ancestor of v. u dominates v if u is on every path from the root to v.
  * Author: smax
  * Source: https://github.com/bqi343/USACO/blob/master/Implementations/content/graphs%20(12)/Advanced/DominatorTree.h, https://tanujkhattar.wordpress.com/2016/01/11/dominator-tree-of-a-directed-graph/
- * Verification: https://cses.fi/problemset/task/1703
+ * Status: Tested on https://cses.fi/problemset/task/1703
  * Time: O((n + m) log n)
  */
 

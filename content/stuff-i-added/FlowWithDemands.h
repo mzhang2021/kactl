@@ -1,4 +1,8 @@
 // https://github.com/ShahjalalShohag/code-library/blob/master/Graph%20Theory/L%20R%20Flow%20with%20Dinic.cpp
+/**
+ * Description: Flow with demands
+ * Author: YouKn0wWho
+ */
 #include<bits/stdc++.h>
 using namespace std;
 

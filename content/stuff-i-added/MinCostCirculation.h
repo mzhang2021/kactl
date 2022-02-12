@@ -3,7 +3,7 @@
  * To find the maximum flow, add a source and sink node, and add an edge from t to s with infinite capacity and negative infinity cost.
  * Author: smax
  * Source: https://community.topcoder.com/stat?c=problem_solution&rm=312044&rd=14730&pm=11217&cr=22840511
- * Verification: http://acm.hdu.edu.cn/showproblem.php?pid=4067, https://community.topcoder.com/stat?c=problem_statement&pm=11217&rd=14730&rm=312044&cr=22840511
+ * Status: Tested on http://acm.hdu.edu.cn/showproblem.php?pid=4067, https://community.topcoder.com/stat?c=problem_statement&pm=11217&rd=14730&rm=312044&cr=22840511
  * Time: O(F * n^2 * m)
  */
 

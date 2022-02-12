@@ -1,8 +1,8 @@
 /**
- * Description: A debug template that allows outputting variables and vectors in a pretty format. You can omit the \033 codes for plain output.
+ * Description: A debug template that allows outputting variables and vectors in a pretty format. You can omit the \\033 codes for plain output.
  * Author: smax
  * Source: self
- * Verification: used by smax for over a year
+ * Status: used by smax for over a year
  */
 
 #ifdef LOCAL

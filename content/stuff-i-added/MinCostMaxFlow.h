@@ -2,7 +2,7 @@
  * Description: Finds the minimum cost maximum flow of a graph with a successive shortest path algorithm. Allows negative cost edges, but not negative cost cycles.
  * Author: smax
  * Source: https://usaco.guide/adv/min-cost-flow?lang=cpp, https://github.com/bqi343/USACO/blob/master/Implementations/content/graphs%20(12)/Flows%20(12.3)/MCMF_2.h
- * Verification: https://cses.fi/problemset/task/2121/
+ * Status: Tested on https://cses.fi/problemset/task/2121/
  * Time: O(n * m + F * m * log m) or O(F * m * log m) if all edge weights are non-negative.
  */
 
