@@ -1,5 +1,16 @@
 // for stuff that isn't long enough to include in it's own file but still important
 
+/* FAST I/O */
+ios_base::sync_with_stdio(false);
+cin.tie(NULL);
+
+/* MACROS */
+#define int long long
+#define pb push_back
+#define mp make_pair
+#define pi pair<int, int>
+#define endl "\n"
+
 /* PRAGMAS */
 // #pragma GCC optimize("O3") - use for floating point cause Ofast uses fast-math which could mess up floating point precision
 #pragma GCC optimize("Ofast")
@@ -30,3 +41,4 @@ goto :eof
 )
 set /a i += 1
 goto loop
+// for generator to take in command line arguments in C++, change main signature to int main(int argc, char* argv[])
