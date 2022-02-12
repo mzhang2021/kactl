@@ -18,6 +18,7 @@
 | Poly | Not in original repo. |
 | HalfPlaneIntersection | Not in original repo. |
 | Interpolation | KACTL version is $\mathcal O(n^2)$, but sometimes $\mathcal O(n)$ for arithmetic series can be useful. |
+| Tidbits | Not in original repo. |
 
 TODO:
 - Figure out how to compile PDF with newly added stuff.
