@@ -43,6 +43,26 @@ $$
 
 Explanation: if you have $n$ elements split into $k$ cycles and are inserting a new element, you can either create a new cycle or insert it directly behind any of the previous $n$ elements in an existing cycle.
 
+The generating function for signed Stirling numbers of the first kind can be computed for a fixed $n$ in $\mathcal O(n \log^2 n)$:
+
+$$
+\sum_{k=0}^n s(n, k) x^k = x(x - 1) \dots (x - (n - 1))
+$$
+
+The unsigned Stirling numbers of the first kind are similar:
+
+$$
+\newcommand{\stirlingi}{\genfrac{[}{]}{0pt}{}}
+\sum_{k=0}^n \stirlingi{n}{k} = x(x + 1) \dots (x + n - 1)
+$$
+
+The unsigned Stirling numbers of the first kind can be computed for a fixed $k$ in $\mathcal O(n \log n)$:
+
+$$
+\newcommand{\stirlingi}{\genfrac{[}{]}{0pt}{}}
+\stirlingi{n}{k} = \frac{n!}{k!} [x^n] \left(\sum_{n=1}^\infin \frac{x^n}{n}\right)^k
+$$
+
 ## Stirling Numbers of the Second Kind
 
 Counts number of ways to partition $n$ labeled objects into $k$ non-empty unlabeled subsets.
@@ -54,6 +74,19 @@ dp[n][0] = dp[0][k] = 0
 $$
 
 Explanation: the $n + 1$th object is either a singleton or not. If it is a singleton, distribute the remaining $n$ objects among $k - 1$ groups, otherwise insert $n + 1$ into one of the $k$ groups and distribute the remaining $n$ objects in $k$ groups as well.
+
+The generating function for Stirling numbers of the second kind can be computed for a fixed $n$ in $\mathcal O(n \log n)$:
+
+$$
+\sum_{k=0}^n S(n, k) x^k = \left(\sum_{i=0}^n \frac{(-1)^i}{i!}\right) \left(\sum_{i=0}^n \frac{i^n}{i!}\right) \mod x^{n+1}
+$$
+
+They can also be computed for a fixed $k$ in $\mathcal O(n \log n)$:
+
+$$
+S(n, k) = n! [x^n] \frac{(e^x - 1)^k}{k!} \\
+e^x = \sum_{n=0}^\infin \frac{x^n}{n!}
+$$
 
 ## Partition Function
 
@@ -67,13 +100,12 @@ $$
 
 Explanation: there are two possibilities. If we include a $1$ in the partition, we simply partition the remaining of $n - 1$ into $k - 1$ parts. Otherwise, each part has size greater than $1$, so we subtract $1$ from each part and solve recursively.
 
-$p(n)$ denotes the number of partitions of $n$ and its generating function can be computed in $\mathcal O(n \log n)$. The generating function is
-
+$p(n)$ denotes the number of partitions of $n$ and its generating function can be computed in $\mathcal O(n \log n)$:
 $$
-\prod_{k=1}^\infin \frac{1}{1 - x^k}
+\sum_{n=0}^\infin p(n) x^n = \prod_{k=1}^\infin \frac{1}{1 - x^k}
 $$
 
-and the denominator can be computed in $\mathcal O(n)$ time with the pentagonal number theorem:
+The denominator can be computed in $\mathcal O(n)$ time with the pentagonal number theorem:
 
 $$
 \prod_{n=1}^\infin (1 - x^n) = 1 + \sum_{k=1}^\infin (-1)^k \left(x^{k(3k+1)/2} + x^{k(3k-1)/2}\right)
