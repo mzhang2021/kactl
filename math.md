@@ -137,3 +137,23 @@ C_0 = 1
 $$
 
 Proof for combinatorial definition of Catalan numbers is based on reflection argument for grid paths.
+
+## Linear Diophantine Equations
+
+Solve equations of the form
+
+$$
+ax + by = c
+$$
+
+Let $\gcd(a, b) = g$. The equation has a solution iff $g$ divides $c$. We can find a solution to the equation $ax_g + by_g = g$ with the Extended Euclidean algorithm (in this book). After that, an initial solution to our original equation is
+
+$$
+x_0 = x_g \cdot \frac{c}{g}, y_0 = y_g \cdot \frac{c}{g}
+$$
+
+All solutions can be enumerated from the initial solution with
+
+$$
+x = x_0 + k \cdot \frac{b}{g}, y = y_0 - k \cdot \frac{a}{g}
+$$
